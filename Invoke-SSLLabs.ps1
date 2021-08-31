@@ -1,9 +1,10 @@
-##"https://api.ssllabs.com/api/v3/". 
+#### SSL Labs API reference ####
+####"https://api.ssllabs.com/api/v3/". #### 
 
 
 # Import URL Lists 
 
-$CONTENT = GET-CONTENT -PATH .\*.csv
+$CONTENT = GET-CONTENT -PATH .\$PSSCRIPTROOT\*.csv
 
 
 # Preflight start new analysis 
@@ -14,7 +15,9 @@ Invoke-restmethod -URi "https://api.ssllabs.com/api/v3/analyze?host=https://$URi
 Write-host "SSLabs is updating $URi please wait" -ForegroundColor Green 
 }
 
-# Wait period 
+
+
+#### Wait period #### 
 
 
 $COUNTDOWN = 30 
@@ -25,14 +28,30 @@ $countdown--
 
 
 
-# Ready check
-$Complete = Invoke-restmethod -Uri "https://api.ssllabs.com/api/v3/analyze?host=https://vhorizon.co.uk&maxAge=12" | Select Status -ExpandProperty Status
-If ($Complete -contains "READY")
-{Echo 'Test is ready'}
+
+while ( $READYCHECK -ne "READY" ) {
+$READYCHECK = Invoke-restmethod -Uri "https://api.ssllabs.com/api/v3/analyze?host=https://$CONTENT[0]" | Select Status -ExpandProperty Status
+Sleep 5
+ }
 
 
+#### Settle down timer ####
 
 
-while ( $READYCHECK -neq READY ) {
-$READYCHECK = Invoke-restmethod -Uri "https://api.ssllabs.com/api/v3/analyze?host=https://vhorizon.co.uk&maxAge=12" | Select Status -ExpandProperty Status }
+$COUNTDOWN = 10 
+while ( $COUNTDOWN -NE 0 ) { write-host $COUNTDOWN seconds to go 
+Sleep 1
+$countdown--
+}
 
+
+#### Results ####
+
+Start-Transcript -path $PSSCRIPTROOT\SSLLabs-report.csv
+FOREACH ($URi IN $CONTENT) {
+	
+	Write-host $URi
+	Invoke-restmethod -Uri "https://api.ssllabs.com/api/v3/analyze?host=https://$URi" | Select endpoints -ExpandProperty endpoints | Select ServerName,ipaddress,grade,hasWarnings
+}
+
+Stop-transcript

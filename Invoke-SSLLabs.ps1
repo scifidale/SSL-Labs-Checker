@@ -5,14 +5,16 @@
 # Import URL Lists 
 
 $CONTENT = GET-CONTENT -PATH .\$PSSCRIPTROOT\*.csv
+$CONTENTEX = $CONTENT[0]
 
 
 # Preflight start new analysis 
 
 FOREACH ($URi in $CONTENT) {
 
-Invoke-restmethod -URi "https://api.ssllabs.com/api/v3/analyze?host=https://$URi&startnew=ON"
 Write-host "SSLabs is updating $URi please wait" -ForegroundColor Green 
+Sleep 5
+Invoke-restmethod -URi "https://api.ssllabs.com/api/v3/analyze?host=https://$URi&startnew=ON"
 }
 
 
@@ -30,7 +32,7 @@ $countdown--
 
 
 while ( $READYCHECK -ne "READY" ) {
-$READYCHECK = Invoke-restmethod -Uri "https://api.ssllabs.com/api/v3/analyze?host=https://$CONTENT[0]" | Select Status -ExpandProperty Status
+$READYCHECK = Invoke-restmethod -Uri "https://api.ssllabs.com/api/v3/analyze?host=https://$CONTENTEX" | Select Status -ExpandProperty Status
 Sleep 5
  }
 
@@ -47,11 +49,11 @@ $countdown--
 
 #### Results ####
 
-Start-Transcript -path $PSSCRIPTROOT\SSLLabs-report.csv
+
 FOREACH ($URi IN $CONTENT) {
 	
-	Write-host $URi
-	Invoke-restmethod -Uri "https://api.ssllabs.com/api/v3/analyze?host=https://$URi" | Select endpoints -ExpandProperty endpoints | Select ServerName,ipaddress,grade,hasWarnings
+
+	Invoke-restmethod -Uri "https://api.ssllabs.com/api/v3/analyze?host=https://$URi" | Select endpoints -ExpandProperty endpoints | Select serverName,ipaddress,grade,hasWarnings
+Sleep 5
 }
 
-Stop-transcript

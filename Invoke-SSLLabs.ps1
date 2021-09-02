@@ -2,19 +2,19 @@
 ####"https://api.ssllabs.com/api/v3/". #### 
 
 
-# Import URL Lists 
+#### Import URL Lists #### 
 
-$CONTENT = GET-CONTENT -PATH .\$PSSCRIPTROOT\*.csv
-$CONTENTEX = $CONTENT[0]
+$CONTENT = GET-CONTENT -PATH $PSSCRIPTROOT\*.csv
+$CONTENTEX = $CONTENT[-1]
 
 
-# Preflight start new analysis 
+#### Preflight start new analysis #### 
 
 FOREACH ($URi in $CONTENT) {
 
 Write-host "SSLabs is updating $URi please wait" -ForegroundColor Green 
 Sleep 5
-Invoke-restmethod -URi "https://api.ssllabs.com/api/v3/analyze?host=https://$URi&startnew=ON"
+Invoke-restmethod -URi "https://api.ssllabs.com/api/v3/analyze?host=https://$URi&startnew=ON&maxAge=1"
 }
 
 
@@ -27,9 +27,9 @@ while ( $COUNTDOWN -NE 0 ) { write-host $COUNTDOWN seconds to go
 Sleep 1
 $countdown--
 }
+CLS
 
-
-
+#### Wait for last item in array to READY ####
 
 while ( $READYCHECK -ne "READY" ) {
 $READYCHECK = Invoke-restmethod -Uri "https://api.ssllabs.com/api/v3/analyze?host=https://$CONTENTEX" | Select Status -ExpandProperty Status
@@ -39,12 +39,14 @@ Sleep 5
 
 #### Settle down timer ####
 
-
+Write-host "Waiting for settle down" -foregroundcolor Yellow
 $COUNTDOWN = 10 
 while ( $COUNTDOWN -NE 0 ) { write-host $COUNTDOWN seconds to go 
 Sleep 1
 $countdown--
 }
+
+CLS
 
 
 #### Results ####
@@ -52,8 +54,6 @@ $countdown--
 
 FOREACH ($URi IN $CONTENT) {
 	
-
-	Invoke-restmethod -Uri "https://api.ssllabs.com/api/v3/analyze?host=https://$URi" | Select endpoints -ExpandProperty endpoints | Select serverName,ipaddress,grade,hasWarnings
+	Invoke-restmethod -Uri "https://api.ssllabs.com/api/v3/analyze?host=https://$URi" | Select-object host,endpoints -ExpandProperty endpoints | Select host,serverName,ipaddress,grade,hasWarnings
 Sleep 5
 }
-
